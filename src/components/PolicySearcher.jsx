@@ -284,7 +284,7 @@ class PolicySearcher extends Component {
           policy.expiryDate
         ),
       (policy) => `${policy.product.code}`,
-      (policy) => `${policy.officer.code}`,
+      (policy) => `${policy.officer?.code}`,
       (policy) => formatMessage(this.props.intl, "policy", `PolicyStage.${policy.stage}`),
       (policy) => formatMessage(this.props.intl, "policy", `PolicyStatus.${policy.status}`),
       (policy) => formatAmount(this.props.modulesManager, this.props.intl, policy.value),
