@@ -15,7 +15,7 @@ const StyledCollapse = styled(Collapse)(({ theme }) => ({
 
 class PolicyDetailsCollapse extends React.Component {
   getHeaders = () => {
-    const { intl } = this.props;
+    const { intl, modulesManager } = this.props;
     return [
       formatMessage(intl, "policy", "policies.policyValue"),
       formatMessage(intl, "policy", "policies.deduction"),
@@ -24,13 +24,14 @@ class PolicyDetailsCollapse extends React.Component {
       formatMessage(intl, "policy", "policies.ceiling"),
       formatMessage(intl, "policy", "policies.hospitalCeiling"),
       formatMessage(intl, "policy", "policies.nonHospitalCeiling"),
-      ...(this.props.modulesManager.getConf("fe-policy", "familyOrInsureePoliciesSummary.showBalance", false) 
+      ...(modulesManager.getConf("fe-policy", "familyOrInsureePoliciesSummary.showBalance", false) 
         ? [formatMessage(intl, "policy", "policies.balance")] 
-        : [])
+        : []),
     ];
   };
 
   itemFormatters = () => {
+    const { modulesManager } = this.props;
     return [
       (i) => i.policyValue,
       (i) => i.ded,
@@ -39,15 +40,14 @@ class PolicyDetailsCollapse extends React.Component {
       (i) => i.ceiling,
       (i) => i.ceilingInPatient,
       (i) => i.ceilingOutPatient,
-      ...(this.props.modulesManager.getConf("fe-policy", "familyOrInsureePoliciesSummary.showBalance", false) 
+      ...(modulesManager.getConf("fe-policy", "familyOrInsureePoliciesSummary.showBalance", false) 
         ? [(i) => i.balance] 
-        : [])
+        : []),
     ];
   };
 
   render() {
-    const { classes, open, policy, intl } = this.props;
-    
+    const { open, policy, intl } = this.props;
     if (!policy) return null;
 
     return (

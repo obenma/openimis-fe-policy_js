@@ -497,6 +497,7 @@ class FamilyOrInsureePoliciesSummary extends PagedDataHandler {
           headers={this.headers()}
           headerActions={this.headerActions()}
           items={policies}
+          itemIdentifier={this.itemIdentifier}
           fetching={fetchingPolicies}
           itemFormatters={this.itemFormatters()}
           error={errorPolicies}

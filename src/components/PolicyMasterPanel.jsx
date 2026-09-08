@@ -12,7 +12,7 @@ import {
   FormControlLabel,
   Checkbox,
 } from "@mui/material";
-import { GetIconComponent } from "@openimis/fe-core";
+import { GetIconComponent, withModulesManager } from "@openimis/fe-core";
 const RenewIcon = GetIconComponent("Autorenew")
 const DeleteIcon = GetIconComponent("Delete")
 const SuspendIcon = GetIconComponent("Pause")
@@ -20,7 +20,6 @@ import {
   formatMessage,
   formatMessageWithValues,
   withTooltip,
-  withModulesManager,
   historyPush,
   coreConfirm,
   journalize,
@@ -58,10 +57,71 @@ const StyledItem = styled('div')(({ theme }) => ({
 const POLICY_POLICY_CONTRIBUTION_KEY = "policy.Policy";
 const POLICY_POLICY_PANELS_CONTRIBUTION_KEY = "policy.Policy.panels";
 
+/**
+ * Wrapper component that conditionally renders either ProductPicker or ContributionPicker
+ * based on the mode configuration
+ */
+const ProductOrContributionPicker = ({ 
+  mode, 
+  intl,
+  value,
+  readOnly,
+  editedId,
+  locationId,
+  enrollmentDate,
+  onProductChange,
+  onContributionChange,
+  required = true,
+  ...otherProps 
+}) => {
+  const commonProps = {
+    module: "policy",
+    value,
+    readOnly,
+    withNull: true,
+    withLabel: true,
+    required,
+    locationId,
+    enrollmentDate,
+    ...otherProps,
+  };
+
+  if (mode === "products") {
+    return (
+      <PublishedComponent
+        pubRef="product.ProductPicker"
+        {...commonProps}
+        readOnly={!!editedId || readOnly}
+        label={formatMessage(intl, "product", "Product")}
+        nullLabel={formatMessage(intl, "product", "Product.none")}
+        placeholder={formatMessage(intl, "product", "ProductPicker.placeholder")}
+        onChange={onProductChange}
+      />
+    );
+  }
+
+  // Default: contributions mode
+  return (
+    <PublishedComponent
+      pubRef="contribution.PremiumCategoryPicker"
+      {...commonProps}
+      readOnly={!!editedId || readOnly}
+      label={formatMessage(intl, "contribution", "Contribution")}
+      nullLabel={formatMessage(intl, "contribution", "Contribution.none")}
+      placeholder={formatMessage(intl, "contribution", "ContributionPicker.placeholder")}
+      onChange={onContributionChange}
+    />
+  );
+};
+
 class PolicyMasterPanel extends FormPanel {
   constructor(props) {
     super(props);
-
+    this.productsOrContributions = this.props.modulesManager.getConf(
+      "fe-policy",
+      "productsOrContributions",
+      "contributions"
+    );
     this.minimumPolicyEffectiveDate = this.props.modulesManager.getConf(
       "fe-policy",
       "minimumPolicyEffectiveDate",
@@ -92,6 +152,17 @@ class PolicyMasterPanel extends FormPanel {
           value: null,
         })
       : this.updateAttribute("product", product);
+  };
+
+  _onContributionChange = (contribution) => {
+    !contribution
+      ? this.updateAttributes({
+          contribution: null,
+          startDate: null,
+          expiryDate: null,
+          value: null,
+        })
+      : this.updateAttribute("contribution", contribution);
   };
 
   renewPolicy = () =>
@@ -287,7 +358,7 @@ class PolicyMasterPanel extends FormPanel {
                 />
               </Grid>
               {!!fetchingPolicyValues && (
-                <Grid size={6} component={StyledItem}>
+                <Grid size={GRID_RESPONSIVE_STANDARD} component={StyledItem}>
                   <ProgressOrError
                     progress={fetchingPolicyValues}
                     error={errorPolicyValues}
@@ -312,29 +383,21 @@ class PolicyMasterPanel extends FormPanel {
                   </Grid>
                 ))}
               <Grid size={GRID_RESPONSIVE_STANDARD} component={StyledItem}>
-                <PublishedComponent
-                  pubRef="product.ProductPicker"
-                  value={!!edited && edited.product}
-                  module="policy"
-                  readOnly={!!edited_id || readOnly}
-                  withNull={true}
-                  label={formatMessage(intl, "product", "Product")}
-                  withLabel={true}
-                  nullLabel={formatMessage(intl, "product", "Product.none")}
-                  withPlaceholder={true}
-                  placeholder={formatMessage(
-                    intl,
-                    "product",
-                    "ProductPicker.placeholder"
-                  )}
-                  onChange={this._onProductChange}
-                  required={true}
+                <ProductOrContributionPicker
+                  mode={this.productsOrContributions}
+                  intl={intl}
+                  value={!!edited && (this.productsOrContributions === "products" ? edited.product : edited.contribution)}
+                  readOnly={readOnly}
+                  editedId={edited_id}
                   locationId={
                     !!edited.family
                       ? decodeId(edited.family?.location?.parent?.parent?.id)
                       : 0
                   }
                   enrollmentDate={edited?.enrollDate ?? null}
+                  onProductChange={this._onProductChange}
+                  onContributionChange={this._onContributionChange}
+                  required={true}
                 />
               </Grid>
               <Grid size={GRID_RESPONSIVE_STANDARD} component={StyledItem}>

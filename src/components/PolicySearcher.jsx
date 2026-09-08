@@ -2,13 +2,6 @@ import React, { Component, Fragment } from "react";
 import { bindActionCreators } from "redux";
 import { connect } from "react-redux";
 import { injectIntl } from "react-intl";
-import { Button, Tooltip } from "@mui/material";
-import { GetIconComponent } from "@openimis/fe-core";
-const PeopleIcon = GetIconComponent("People")
-const TabIcon = GetIconComponent("Tab")
-const RenewIcon = GetIconComponent("Autorenew")
-const DeleteIcon = GetIconComponent("Delete")
-const SuspendIcon = GetIconComponent("Pause")
 
 import {
   withModulesManager,
@@ -23,6 +16,8 @@ import {
   Searcher,
   PublishedComponent,
   AmountInput,
+  GetIconComponent,
+  ActionMenu,
 } from "@openimis/fe-core";
 import { fetchPolicySummaries, deletePolicy, suspendPolicy } from "../actions";
 import {
@@ -32,6 +27,11 @@ import {
   canSuspendPolicy,
   canRenewPolicy,
 } from "../utils/utils";
+const PeopleIcon = GetIconComponent("People")
+const TabIcon = GetIconComponent("Tab")
+const RenewIcon = GetIconComponent("Autorenew")
+const DeleteIcon = GetIconComponent("Delete")
+const SuspendIcon = GetIconComponent("Pause")
 
 import PolicyFilter from "./PolicyFilter";
 
@@ -306,127 +306,91 @@ class PolicySearcher extends Component {
             )
         : null,
       (policy) => {
-        if (!policy.family) return null;
         return (
-          <Tooltip
-            title={formatMessage(
-              this.props.intl,
-              "policy",
-              "policySummaries.openFamilyButton.tooltip"
-            )}
-          >
-            <Button
-              startIcon={<PeopleIcon />}
-              onClick={(e) =>
-                !policy.clientMutationId &&
-                historyPush(
-                  this.props.modulesManager,
-                  this.props.history,
-                  "insuree.route.familyOverview",
-                  [policy.family.uuid]
+          <ActionMenu
+            actions={[
+              !!policy.family && {
+                icon: <PeopleIcon />,
+                tooltip: formatMessage(
+                this.props.intl,
+                "policy",
+                "policySummaries.openFamilyButton.tooltip",
+                ),
+                label: formatMessage(
+                  this.props.intl,
+                  "policy",
+                  "policySummaries.openFamilyButton.buttonText"
+                ),
+                action: () =>
+                  !policy.clientMutationId &&
+                  historyPush(
+                    this.props.modulesManager,
+                    this.props.history,
+                    "insuree.route.familyOverview",
+                    [policy.family.uuid]
+                  )
+              },
+              {
+                icon: <TabIcon />,
+                tooltip: formatMessage(
+                  this.props.intl,
+                  "policy",
+                  "policySummaries.openNewTabButton.tooltip"
+                ),
+                action: () => !policy.clientMutationId && this.props.onDoubleClick(policy, true),
+                label: formatMessage(
+                  this.props.intl,
+                  "policy",
+                  "policySummaries.openNewTabButton.buttonText"
+                )
+              },
+              this.canRenew(policy) && {
+                icon: <RenewIcon />,
+                tooltip: formatMessage(
+                  this.props.intl,
+                  "policy",
+                  "action.RenewPolicy.tooltip"
+                ),
+                label: formatMessage(
+                  this.props.intl,
+                  "policy",
+                  "action.RenewPolicy.buttonText"
+                ),
+                action: () => !policy.clientMutationId && this.renewPolicy(policy)
+              },
+              this.canSuspend(policy) && {
+                tooltip: formatMessage(
+                  this.props.intl,
+                  "policy",
+                  "action.SuspendPolicy.tooltip"
+                ),
+                icon: <SuspendIcon />,
+                action: () => !policy.clientMutationId && this.confirmSuspend(policy),
+                label: formatMessage(
+                  this.props.intl,
+                  "policy",
+                  "action.SuspendPolicy.buttonText"
+                )
+              },
+              this.canDelete(policy) && {
+                divider: true,
+                icon: <DeleteIcon />,
+                label: formatMessage(
+                  this.props.intl,
+                  "policy",
+                  "action.DeletePolicy.buttonText"
+                ),
+                action: () => !policy.clientMutationId && this.confirmDelete(policy),
+                tooltip: formatMessage(
+                  this.props.intl,
+                  "policy",
+                  "action.DeletePolicy.tooltip"
                 )
               }
-            >
-              {formatMessage(
-                this.props.intl,
-                "policy",
-                "policySummaries.openFamilyButton.buttonText"
-              )}
-            </Button>
-          </Tooltip>
+            ].filter(Boolean)}
+          />
         );
       },
-      (policy) => (
-        <Tooltip
-          title={formatMessage(
-            this.props.intl,
-            "policy",
-            "policySummaries.openNewTabButton.tooltip"
-          )}
-        >
-          <Button
-            startIcon={<TabIcon />}
-            onClick={(e) =>
-              !policy.clientMutationId && this.props.onDoubleClick(policy, true)
-            }
-          >
-            {formatMessage(
-              this.props.intl,
-              "policy",
-              "policySummaries.openNewTabButton.buttonText"
-            )}
-          </Button>
-        </Tooltip>
-      ),
-      (policy) =>
-        this.canRenew(policy) && (
-          <Tooltip
-            title={formatMessage(
-              this.props.intl,
-              "policy",
-              "action.RenewPolicy.tooltip"
-            )}
-          >
-            <Button
-              startIcon={<RenewIcon />}
-              onClick={(e) =>
-                !policy.clientMutationId && this.renewPolicy(policy)
-              }
-            >
-              {formatMessage(
-                this.props.intl,
-                "policy",
-                "action.RenewPolicy.buttonText"
-              )}
-            </Button>
-          </Tooltip>
-        ),
-      (policy) =>
-        this.canSuspend(policy) && (
-          <Tooltip
-            title={formatMessage(
-              this.props.intl,
-              "policy",
-              "action.SuspendPolicy.tooltip"
-            )}
-          >
-            <Button
-              startIcon={<SuspendIcon />}
-              onClick={(e) =>
-                !policy.clientMutationId && this.confirmSuspend(policy)
-              }
-            >
-              {formatMessage(
-                this.props.intl,
-                "policy",
-                "action.SuspendPolicy.buttonText"
-              )}
-            </Button>
-          </Tooltip>
-        ),
-      (policy) =>
-        this.canDelete(policy) && (
-          <Tooltip
-            title={formatMessage(
-              this.props.intl,
-              "policy",
-              "action.DeletePolicy.tooltip"
-            )}
-          >
-            <Button
-              startIcon={<DeleteIcon />}
-              onClick={(e) =>
-                !policy.clientMutationId && this.confirmDelete(policy)
-              }
-            >
-              {formatMessage(
-                this.props.intl,
-                "policy",
-                "action.DeletePolicy.buttonText"
-              )}
-            </Button>
-          </Tooltip>
-        ),
     ];
     return formatters;
   };
